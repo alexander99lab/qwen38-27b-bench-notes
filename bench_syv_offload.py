@@ -1,5 +1,6 @@
 import json, time, urllib.request, random
-URL='http://localhost:18020/v1/chat/completions'
+import os
+URL=os.environ.get('BENCH_URL', 'http://localhost:18020') + '/v1/chat/completions'
 H={'Content-Type':'application/json','Authorization':'Bearer REDACTED'}
 NL=chr(10); random.seed(7)
 def doc(uid, sections):

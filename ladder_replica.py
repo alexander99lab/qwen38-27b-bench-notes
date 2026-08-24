@@ -3,7 +3,8 @@
 # промпт ~100 слов, ген 256, stream: TTFT отдельно, декод-агрегат от первого токена.
 import json, threading, time, urllib.request, random, sys
 
-URL = 'http://localhost:18020/v1/chat/completions'
+import os
+URL = os.environ.get('BENCH_URL', 'http://localhost:18020') + '/v1/chat/completions'
 H = {'Content-Type': 'application/json', 'Authorization': 'Bearer REDACTED'}
 random.seed(int(sys.argv[1]) if len(sys.argv) > 1 else 20)
 WORDS = ('система отчёт заказчик поставка договор регламент отдел проверка акт приёмка '

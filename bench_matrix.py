@@ -3,7 +3,8 @@
 # usage: python3 bench_matrix.py --label cfg2 --pool 23000 --bpt 95000 [--ram-gib 8] [--heavy]
 import argparse, json, threading, time, urllib.request, random, sys
 
-URL = 'http://localhost:18020/v1/chat/completions'
+import os
+URL = os.environ.get('BENCH_URL', 'http://localhost:18020') + '/v1/chat/completions'
 H = {'Content-Type': 'application/json', 'Authorization': 'Bearer REDACTED'}
 NL = chr(10)
 
