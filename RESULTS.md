@@ -179,3 +179,20 @@ HEAVY (промпт 10K): PIECEWISE полка агрегата ~23, FULL ~40 �
    (consumed одинаковый). native+0.95 стабилен; native+0.98 — ленивый OOM (`aten::empty failed` в compiled-графе).
 3. fs-тир (NVMe) без лимита ёмкости — сожрал 28ГБ диска; на ВМ отключён, ждём ответа syv.
 4. mmap-призраки /dev/shm: чистить ПЕРЕД каждым стартом, два призрака по 8.57ГБ = `OSError: Bad address` на буте.
+
+
+## 24.09 — HyperQwen 0.29 на хомлабе: тир работает, если он больше пула
+
+Официальный образ ghcr.io/syv-ai/hyperqwen:latest (vLLM 0.29), наша AutoRound-fast-ru, SPEC=mtp k=3, VISION=1,
+окно 65536, соседи (embed/rerank/asr/diar/ocr) переведены на CPU. verify OK, пул 92 432 (было 79 552),
+реплика соло 130 / N=8 473 (было 104/430).
+
+Шесть контролей дали external hits = 0 (оба спека, retention/без, mtp/dflash2, VISION on/off) — причина
+оказалась геометрией: тир 6 ГБ < пул 92K (8.8 ГБ), все записи переполняли тир до возврата (правило из шапки их
+bench/replay_offload_serve.py). Подтверждено их оракулом при пуле 3 ГБ: ext_hits 9984, CPU_to_GPU 776 МБ, TTFT 10.9 → 4.1 с.
+Оговорка: при пуле > тира оракул выдаёт ложный SERVED по ratio TTFT — смотреть CPU_to_GPU/ext_hits.
+
+Рабочий конфиг: --kv-cache-memory 6.5e9 (пул 84 855) + --kv-offloading-size 8 + --prefix-cache-retention-interval 2496
+(только через EXTRA_ARGS; PREFIX_RETENTION лаунчер вне huge/dflash2 игнорирует). Три 33K-чата по кругу
+(alternating_chats.py 48000 2 3): ход 2 = 3.0 с (подъём из RAM, 13.5 ГБ за тест), ход 3 = 0.98 с — против 25.5 с / 0 %.
+Следствие для A40 (пул 227K = 21 ГБ): тир должен быть ≥ 24-32 ГБ RAM.
